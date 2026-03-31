@@ -79,12 +79,12 @@
   </div>
   <table id="main-table" style="display:none">
     <thead><tr>
-      <th onclick="sortBy('data_sort')"      data-col="data_sort">       Data do Registro     <span class="sa">↕</span></th>
-      <th onclick="sortBy('codigo')"         data-col="codigo">          Codigo do Campo      <span class="sa">↕</span></th>
-      <th onclick="sortBy('area_total')"     data-col="area_total">      Area Total (ha)      <span class="sa">↕</span></th>
-      <th onclick="sortBy('area_trabalhada')"data-col="area_trabalhada">  Area Trabalhada (ha) <span class="sa">↕</span></th>
-      <th onclick="sortBy('buracos')"        data-col="buracos">         Buracos de Tatu      <span class="sa">↕</span></th>
       <th onclick="sortBy('critico')"        data-col="critico">         Status               <span class="sa">↕</span></th>
+      <th onclick="sortBy('codigo')"         data-col="codigo">          Codigo do Campo      <span class="sa">↕</span></th>
+      <th onclick="sortBy('data_sort')"      data-col="data_sort">       Data do Registro     <span class="sa">↕</span></th>
+      <th onclick="sortBy('buracos')"        data-col="buracos">         Buracos de Tatu      <span class="sa">↕</span></th>
+      <th onclick="sortBy('area_trabalhada')"data-col="area_trabalhada">  Area Trabalhada (ha) <span class="sa">↕</span></th>
+      <th onclick="sortBy('area_total')"     data-col="area_total">      Area Total (ha)      <span class="sa">↕</span></th>
     </tr></thead>
     <tbody id="table-body"></tbody>
   </table>
@@ -116,7 +116,7 @@ function render(){
   document.getElementById('table-body').innerHTML=data.map(r=>{
     const colNum=r.critico?'var(--red)':'var(--green)';
     const badge=r.critico?'<span class="badge critico">⚠️ Critico</span>':'<span class="badge normal">✅ Normal</span>';
-    return '<tr><td class="td-date">📅 '+r.data+'</td><td class="td-code">'+r.codigo+'</td><td class="td-area">'+r.area_total.toLocaleString('pt-BR',fmt1)+' ha</td><td class="td-area">'+r.area_trabalhada.toLocaleString('pt-BR',fmt1)+' ha</td><td class="td-num" style="color:'+colNum+'">'+r.buracos.toLocaleString('pt-BR')+'</td><td>'+badge+'</td></tr>';
+    return '<tr><td>'+badge+'</td><td class="td-code">'+r.codigo+'</td><td class="td-date">📅 '+r.data+'</td><td class="td-num" style="color:'+colNum+'">'+r.buracos.toLocaleString('pt-BR')+'</td><td class="td-area">'+r.area_trabalhada.toLocaleString('pt-BR',fmt1)+' ha</td><td class="td-area">'+r.area_total.toLocaleString('pt-BR',fmt1)+' ha</td></tr>';
   }).join('');
 }
 </script>
