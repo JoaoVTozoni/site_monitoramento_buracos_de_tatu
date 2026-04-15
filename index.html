@@ -23,7 +23,7 @@
     .search-combo{position:relative;flex:1;min-width:260px}
     .search-combo input{width:100%;background:var(--bg2);border:1.5px solid var(--border-hi);border-radius:8px;color:var(--txt0);font-size:14px;padding:9px 14px 9px 38px;outline:none;transition:border-color var(--tr),background var(--tr),color var(--tr)}
     .search-combo input:focus{border-color:var(--blue)}
-    .search-combo::before{content:"F50D";position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;z-index:1}
+    .search-combo::before{content:"\1F50D";position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;z-index:1}
     .dropdown-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--bg2);border:1.5px solid var(--blue-bd);border-radius:8px;max-height:220px;overflow-y:auto;z-index:1000;display:none;box-shadow:var(--shadow)}
     .dropdown-list.open{display:block}
     .dropdown-item{padding:9px 14px;cursor:pointer;font-size:13.5px;color:var(--txt0);transition:background .15s;display:flex;align-items:center;gap:8px}
@@ -93,9 +93,9 @@
     <input type="text" id="search-input" placeholder="Buscar ou selecionar campo..." autocomplete="off"/>
     <div class="dropdown-list" id="dropdown-list"></div>
   </div>
-  <button class="filter-btn active-all" id="btn-all"  onclick="setFilter('all')">Todos</button>
-  <button class="filter-btn"           id="btn-crit"  onclick="setFilter('critico')">&#9888;&#65039; Criticos</button>
-  <button class="filter-btn"           id="btn-ok"    onclick="setFilter('normal')">&#9989; Normais</button>
+  <button class="filter-btn active-all" id="btn-all"  onclick="setFilter('all')" >Todos</button>
+  <button class="filter-btn"           id="btn-crit" onclick="setFilter('critico')" >&#9888;&#65039; Criticos</button>
+  <button class="filter-btn"           id="btn-ok"   onclick="setFilter('normal')" >&#9989; Normais</button>
 </div>
 <div class="cards-area" id="cards-area">
   <div class="card"><div class="card-label">Quantidade total de buracos</div><div class="card-value" id="card-total-buracos">-</div><div class="card-sub" id="card-campo-label">no campo selecionado</div></div>
@@ -129,119 +129,20 @@ const ALL_CODIGOS  = [...new Set(ALL_ROWS.map(r => r.codigo))].sort();
 const CRITICOS_SET = new Set(ALL_ROWS.filter(r => r.critico).map(r => r.codigo));
 let filterMode = 'all', searchTerm = '', selectedCodigo = null, showAll = false;
 let sortCol = 'data_sort', sortAsc = false, ddHighlight = -1;
-
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  document.getElementById('theme-icon').textContent = t === 'dark' ? '☀️' : '??';
-  try { localStorage.setItem('tatu-theme', t); } catch(e) {}
-}
-function toggleTheme() { applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
-function getFilteredCodigos(term) { return term ? ALL_CODIGOS.filter(c => c.toLowerCase().includes(term.toLowerCase())) : ALL_CODIGOS; }
-function renderDropdown(term) {
-  const list = document.getElementById('dropdown-list'), items = getFilteredCodigos(term);
-  ddHighlight = -1;
-  if (!items.length) { list.classList.remove('open'); return; }
-  list.innerHTML = items.map(c => `<div class="dropdown-item" data-codigo="${c}" onclick="selectCodigo('${c}')"><span class="dd-dot ${CRITICOS_SET.has(c)?'crit':'ok'}"></span>${c}</div>`).join('');
-  list.classList.add('open');
-}
-function selectCodigo(codigo) {
-  selectedCodigo = codigo; showAll = false;
-  document.getElementById('search-input').value = codigo;
-  document.getElementById('dropdown-list').classList.remove('open');
-  searchTerm = codigo.toLowerCase();
-  setFilterSilent('all'); render();
-}
-function closeDropdown() { setTimeout(() => document.getElementById('dropdown-list').classList.remove('open'), 150); }
-function ddKeyNav(e) {
-  const list = document.getElementById('dropdown-list'), items = list.querySelectorAll('.dropdown-item');
-  if (!list.classList.contains('open') || !items.length) return;
-  if (e.key === 'ArrowDown') { e.preventDefault(); ddHighlight = Math.min(ddHighlight+1, items.length-1); items.forEach((el,i) => el.classList.toggle('highlighted', i===ddHighlight)); items[ddHighlight].scrollIntoView({block:'nearest'}); }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); ddHighlight = Math.max(ddHighlight-1, 0); items.forEach((el,i) => el.classList.toggle('highlighted', i===ddHighlight)); items[ddHighlight].scrollIntoView({block:'nearest'}); }
-  else if (e.key === 'Enter') { if (ddHighlight >= 0) selectCodigo(items[ddHighlight].dataset.codigo); list.classList.remove('open'); }
-  else if (e.key === 'Escape') list.classList.remove('open');
-}
-function setFilterSilent(mode) {
-  filterMode = mode;
-  ['all','crit','ok'].forEach(k => document.getElementById('btn-'+k).className = 'filter-btn');
-  const map = {all:['btn-all','active-all'], critico:['btn-crit','active-crit'], normal:['btn-ok','active-ok']};
-  document.getElementById(map[mode][0]).classList.add(map[mode][1]);
-}
-function setFilter(mode) {
-  if (mode === 'all') { selectedCodigo = null; searchTerm = ''; showAll = true; document.getElementById('search-input').value = ''; }
-  else { showAll = true; }
-  setFilterSilent(mode); render();
-}
-function sortBy(col) {
-  sortAsc = (sortCol === col) ? !sortAsc : (col === 'codigo' || col === 'data_sort');
-  sortCol = col;
-  document.querySelectorAll('th[data-col]').forEach(th => th.classList.remove('sorted'));
-  const el = document.querySelector('th[data-col="'+col+'"]');
-  if (el) el.classList.add('sorted');
-  render();
-}
-function updateCards(data) {
-  const area = document.getElementById('cards-area');
-  if (!selectedCodigo || !data.length) { area.classList.remove('visible'); return; }
-  area.classList.add('visible');
-  const totalBuracos = data.reduce((s,r) => s+r.buracos, 0);
-  const somaAreaTrab = data.reduce((s,r) => s+r.area_trabalhada_num, 0);
-  const areaTotal    = data[0].area_total;
-  const referencia   = somaAreaTrab < areaTotal ? somaAreaTrab : areaTotal;
-  const bph          = referencia > 0 ? (totalBuracos / referencia) : 0;
-  const cc           = data.some(r => r.critico) ? 'red' : 'green';
-  document.getElementById('card-total-buracos').textContent = totalBuracos.toLocaleString('pt-BR');
-  document.getElementById('card-total-buracos').className   = 'card-value ' + cc;
-  document.getElementById('card-campo-label').textContent   = 'campo: ' + selectedCodigo;
-  document.getElementById('card-bph').textContent = bph.toLocaleString('pt-BR', {minimumFractionDigits:2,maximumFractionDigits:2});
-  document.getElementById('card-bph').className   = 'card-value ' + cc;
-  document.getElementById('card-ref-label').textContent = somaAreaTrab < areaTotal
-    ? 'ref: area trabalhada ('+somaAreaTrab.toLocaleString('pt-BR',{maximumFractionDigits:1})+' ha)'
-    : 'ref: area total ('+areaTotal.toLocaleString('pt-BR',{maximumFractionDigits:1})+' ha)';
-  document.getElementById('card-area-total').textContent = areaTotal.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
-  document.getElementById('card-area-trab').textContent  = somaAreaTrab.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
-}
-function onRowClick(codigo) { selectCodigo(codigo); }
-function render() {
-  const elInit = document.getElementById('initial-state'), elTable = document.getElementById('main-table'), elEmpty = document.getElementById('empty-state');
-  const hasContent = selectedCodigo || searchTerm || showAll || filterMode !== 'all';
-  if (!hasContent) { elInit.style.display='block'; elTable.style.display='none'; elEmpty.style.display='none'; document.getElementById('cards-area').classList.remove('visible'); return; }
-  let data = ALL_ROWS.slice();
-  if (searchTerm) data = data.filter(r => r.codigo.toLowerCase().includes(searchTerm));
-  if (filterMode === 'critico') data = data.filter(r => r.critico);
-  if (filterMode === 'normal')  data = data.filter(r => !r.critico);
-  data.sort((a,b) => { let va=a[sortCol],vb=b[sortCol]; if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase()} return va<vb?(sortAsc?-1:1):va>vb?(sortAsc?1:-1):0; });
-  elInit.style.display = 'none';
-  updateCards(selectedCodigo ? ALL_ROWS.filter(r => r.codigo===selectedCodigo) : []);
-  if (!data.length) { elTable.style.display='none'; elEmpty.style.display='block'; return; }
-  elEmpty.style.display = 'none'; elTable.style.display = 'table';
-  const fmt1 = {minimumFractionDigits:1,maximumFractionDigits:1};
-  document.getElementById('table-body').innerHTML = data.map(r => {
-    const colNum = r.critico ? 'var(--red)' : 'var(--green)';
-    const badge  = r.critico
-      ? '<span class="badge critico">&#9888;&#65039; Critico</span>'
-      : '<span class="badge normal">&#9989; Normal</span>';
-    const buracosCell = r.buracos_str
-      ? `<td class="td-num"><span class="parts">${r.buracos_str}</span><span class="total" style="color:${colNum}">= ${r.buracos.toLocaleString('pt-BR')}</span></td>`
-      : `<td class="td-num"><span class="total" style="color:${colNum}">${r.buracos.toLocaleString('pt-BR')}</span></td>`;
-    const areaTxt = r.area_trabalhada_str.includes('+')
-      ? `<span style="color:var(--txt2);font-size:12px">${r.area_trabalhada_str}</span> <span style="font-weight:700">= ${r.area_trabalhada_num.toLocaleString('pt-BR',fmt1)} ha</span>`
-      : r.area_trabalhada_str + ' ha';
-    return `<tr class="${selectedCodigo===r.codigo?' row-selected':''}" onclick="onRowClick('${r.codigo}')">`
-      +`<td>${badge}</td><td class="td-code">${r.codigo}</td><td class="td-date">&#128197; ${r.data}</td>`
-      +buracosCell
-      +`<td class="td-area">${areaTxt}</td><td class="td-area">${r.area_total.toLocaleString('pt-BR',fmt1)} ha</td><td class="td-servico">${r.servico||''}</td></tr>`;
-  }).join('');
-}
-document.addEventListener('DOMContentLoaded', () => {
-  let s='dark'; try{s=localStorage.getItem('tatu-theme')||'dark'}catch(e){}
-  applyTheme(s);
-  document.getElementById('update-time').textContent = new Date().toLocaleString('pt-BR');
-  const input = document.getElementById('search-input');
-  input.addEventListener('input', e => { searchTerm=e.target.value.trim().toLowerCase(); selectedCodigo=null; showAll=false; renderDropdown(e.target.value.trim()); render(); });
-  input.addEventListener('focus', e => { renderDropdown(e.target.value.trim()); });
-  input.addEventListener('blur',  closeDropdown);
-  input.addEventListener('keydown', ddKeyNav);
-});
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);document.getElementById('theme-icon').textContent=t==='dark'?' \u2600\uFE0F':'\uD83C\uDF19';try{localStorage.setItem('tatu-theme',t)}catch(e){}}
+function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')=== 'dark'?'light':'dark')}
+function getFilteredCodigos(term){return term?ALL_CODIGOS.filter(c=>c.toLowerCase().includes(term.toLowerCase())):ALL_CODIGOS}
+function renderDropdown(term){const list=document.getElementById('dropdown-list'),items=getFilteredCodigos(term);ddHighlight=-1;if(!items.length){list.classList.remove('open');return}list.innerHTML=items.map(c=>`<div class="dropdown-item" data-codigo="${c}" onclick="selectCodigo('${c}')" ><span class="dd-dot ${CRITICOS_SET.has(c)?'crit':'ok'}"></span>${c}</div>`).join('');list.classList.add('open')}
+function selectCodigo(codigo){selectedCodigo=codigo;showAll=false;document.getElementById('search-input').value=codigo;document.getElementById('dropdown-list').classList.remove('open');searchTerm=codigo.toLowerCase();setFilterSilent('all');render()}
+function closeDropdown(){setTimeout(()=>document.getElementById('dropdown-list').classList.remove('open'),150)}
+function ddKeyNav(e){const list=document.getElementById('dropdown-list'),items=list.querySelectorAll('.dropdown-item');if(!list.classList.contains('open')||!items.length)return;if(e.key==='ArrowDown'){e.preventDefault();ddHighlight=Math.min(ddHighlight+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('highlighted',i===ddHighlight));items[ddHighlight].scrollIntoView({block:'nearest'})}else if(e.key==='ArrowUp'){e.preventDefault();ddHighlight=Math.max(ddHighlight-1,0);items.forEach((el,i)=>el.classList.toggle('highlighted',i===ddHighlight));items[ddHighlight].scrollIntoView({block:'nearest'})}else if(e.key==='Enter'){if(ddHighlight>=0)selectCodigo(items[ddHighlight].dataset.codigo);list.classList.remove('open')}else if(e.key==='Escape')list.classList.remove('open')}
+function setFilterSilent(mode){filterMode=mode;['all','crit','ok'].forEach(k=>document.getElementById('btn-'+k).className='filter-btn');const map={all:['btn-all','active-all'],critico:['btn-crit','active-crit'],normal:['btn-ok','active-ok']};document.getElementById(map[mode][0]).classList.add(map[mode][1])}
+function setFilter(mode){if(mode==='all'){selectedCodigo=null;searchTerm='';showAll=true;document.getElementById('search-input').value=''}else{showAll=true}setFilterSilent(mode);render()}
+function sortBy(col){sortAsc=(sortCol===col)?!sortAsc:(col==='codigo'||col==='data_sort');sortCol=col;document.querySelectorAll('th[data-col]').forEach(th=>th.classList.remove('sorted'));const el=document.querySelector('th[data-col="'+col+""]');if(el)el.classList.add('sorted');render()}
+function updateCards(data){const area=document.getElementById('cards-area');if(!selectedCodigo||!data.length){area.classList.remove('visible');return}area.classList.add('visible');const totalBuracos=data.reduce((s,r)=>s+r.buracos,0);const somaAreaTrab=data.reduce((s,r)=>s+r.area_trabalhada_num,0);const areaTotal=data[0].area_total;const referencia=somaAreaTrab<areaTotal?somaAreaTrab:areaTotal;const bph=referencia>0?(totalBuracos/referencia):0;const cc=data.some(r=>r.critico)?'red':'green';document.getElementById('card-total-buracos').textContent=totalBuracos.toLocaleString('pt-BR');document.getElementById('card-total-buracos').className='card-value '+cc;document.getElementById('card-campo-label').textContent='campo: '+selectedCodigo;document.getElementById('card-bph').textContent=bph.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('card-bph').className='card-value '+cc;document.getElementById('card-ref-label').textContent=somaAreaTrab<areaTotal?'ref: area trabalhada ('+somaAreaTrab.toLocaleString('pt-BR',{maximumFractionDigits:1})+ 'ha)':'ref: area total ('+areaTotal.toLocaleString('pt-BR',{maximumFractionDigits:1})+ 'ha)';document.getElementById('card-area-total').textContent=areaTotal.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});document.getElementById('card-area-trab').textContent=somaAreaTrab.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}
+function onRowClick(codigo){selectCodigo(codigo)}
+function render(){const elInit=document.getElementById('initial-state'),elTable=document.getElementById('main-table'),elEmpty=document.getElementById('empty-state');const hasContent=selectedCodigo||searchTerm||showAll||filterMode!=='all';if(!hasContent){elInit.style.display='block';elTable.style.display='none';elEmpty.style.display='none';document.getElementById('cards-area').classList.remove('visible');return}let data=ALL_ROWS.slice();if(searchTerm)data=data.filter(r=>r.codigo.toLowerCase().includes(searchTerm));if(filterMode==='critico')data=data.filter(r=>r.critico);if(filterMode==='normal')data=data.filter(r=>!r.critico);data.sort((a,b)=>{let va=a[sortCol],vb=b[sortCol];if(typeof va==='string'){va=va.toLowerCase();vb=vb.toLowerCase()}return va<vb?(sortAsc?-1:1):va>vb?(sortAsc?1:-1):0});elInit.style.display='none';updateCards(selectedCodigo?ALL_ROWS.filter(r=>r.codigo===selectedCodigo):[]);if(!data.length){elTable.style.display='none';elEmpty.style.display='block';return}elEmpty.style.display='none';elTable.style.display='table';const fmt1={minimumFractionDigits:1,maximumFractionDigits:1};document.getElementById('table-body').innerHTML=data.map(r=>{const colNum=r.critico?'var(--red)':'var(--green)';const badge=r.critico?'<span class="badge critico">&#9888;&#65039; Critico</span>':'<span class="badge normal">&#9989; Normal</span>';const buracosCell=r.buracos_str?`<td class="td-num"><span class="parts">${r.buracos_str}</span><span class="total" style="color:${colNum}">= ${r.buracos.toLocaleString('pt-BR')}</span></td>`:`<td class="td-num"><span class="total" style="color:${colNum}">${r.buracos.toLocaleString('pt-BR')}</span></td>`;const areaTxt=r.area_trabalhada_str.includes('+')?`<span style="color:var(--txt2);font-size:12px">${r.area_trabalhada_str}</span> <span style="font-weight:700">= ${r.area_trabalhada_num.toLocaleString('pt-BR',fmt1)} ha</span>`:r.area_trabalhada_str+' ha';return`<tr class="${selectedCodigo===r.codigo?' row-selected':' '}" onclick="onRowClick('${r.codigo}')" ><td>${badge}</td><td class="td-code">${r.codigo}</td><td class="td-date">&#128197; ${r.data}</td>${buracosCell}<td class="td-area">${areaTxt}</td><td class="td-area">${r.area_total.toLocaleString('pt-BR',fmt1)} ha</td><td class="td-servico">${r.servico||' '}</td></tr>`}).join('');}
+document.addEventListener('DOMContentLoaded',()=>{let s='dark';try{s=localStorage.getItem('tatu-theme')||' dark'}catch(e){}applyTheme(s);document.getElementById('update-time').textContent=new Date().toLocaleString('pt-BR');const input=document.getElementById('search-input');input.addEventListener('input',e=>{searchTerm=e.target.value.trim().toLowerCase();selectedCodigo=null;showAll=false;renderDropdown(e.target.value.trim());render()});input.addEventListener('focus',e=>{renderDropdown(e.target.value.trim())});input.addEventListener('blur',closeDropdown);input.addEventListener('keydown',ddKeyNav)});
 </script>
 </body>
 </html>
