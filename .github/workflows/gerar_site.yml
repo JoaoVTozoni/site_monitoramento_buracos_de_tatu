@@ -1,0 +1,36 @@
+name: Gerar Site Buracos de Tatu
+
+on:
+  push:
+    paths:
+      - 'dados/dados_brutos_207.xlsx'
+
+permissions:
+  contents: write
+
+jobs:
+  gerar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Rodar script
+        run: python gerar_site_buraco_de_tatu.py
+
+      - name: Commitar index.html gerado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --staged --quiet || git commit -m "Atualiza site automaticamente via Actions"
+          git push
