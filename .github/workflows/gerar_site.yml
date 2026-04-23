@@ -1,9 +1,12 @@
 name: Gerar Site Buracos de Tatu
 
 on:
-  push:
-    paths:
-      - 'dados/dados_brutos_207.xlsx'
+  workflow_dispatch:
+    inputs:
+      planilha:
+        description: 'Cole o conteudo base64 da planilha aqui'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -23,6 +26,11 @@ jobs:
 
       - name: Instalar dependencias
         run: pip install -r requirements.txt
+
+      - name: Decodificar planilha
+        run: |
+          mkdir -p dados
+          echo "${{ github.event.inputs.planilha }}" | base64 -d > dados/dados_brutos_207.xlsx
 
       - name: Rodar script
         run: python gerar_site_buraco_de_tatu.py
