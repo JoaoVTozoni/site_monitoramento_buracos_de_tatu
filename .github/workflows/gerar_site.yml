@@ -2,11 +2,6 @@ name: Gerar Site Buracos de Tatu
 
 on:
   workflow_dispatch:
-    inputs:
-      planilha:
-        description: 'Cole o conteudo base64 da planilha aqui'
-        required: true
-        type: string
 
 permissions:
   contents: write
@@ -27,10 +22,31 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
-      - name: Decodificar planilha
+      - name: Baixar planilha do SharePoint
+        env:
+          SHAREPOINT_USER:     ${{ secrets.SHAREPOINT_USER }}
+          SHAREPOINT_PASSWORD: ${{ secrets.SHAREPOINT_PASSWORD }}
+          SHAREPOINT_URL:      ${{ secrets.SHAREPOINT_URL }}
         run: |
-          mkdir -p dados
-          echo "${{ github.event.inputs.planilha }}" | base64 -d > dados/dados_brutos_207.xlsx
+          python - <<'EOF'
+          import os, requests
+
+          user     = os.environ["SHAREPOINT_USER"]
+          password = os.environ["SHAREPOINT_PASSWORD"]
+          url      = os.environ["SHAREPOINT_URL"]
+
+          session = requests.Session()
+          session.auth = (user, password)
+
+          resp = session.get(url)
+          resp.raise_for_status()
+
+          os.makedirs("dados", exist_ok=True)
+          with open("dados/dados_brutos_207.xlsx", "wb") as f:
+              f.write(resp.content)
+
+          print("Planilha baixada com sucesso.")
+          EOF
 
       - name: Rodar script
         run: python gerar_site_buraco_de_tatu.py
