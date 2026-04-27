@@ -31,9 +31,14 @@ jobs:
         run: |
           mkdir -p dados
           python - <<'EOF'
-          import base64, os
+          import base64, os, re
           data = os.environ["PLANILHA_B64"]
-          data = ''.join(data.split())
+          # Remove tudo que nao e caractere base64 valido
+          data = re.sub(r'[^A-Za-z0-9+/=]', '', data)
+          # Adiciona padding se necessario
+          missing = len(data) % 4
+          if missing:
+              data += '=' * (4 - missing)
           with open("dados/dados_brutos_207.xlsx", "wb") as f:
               f.write(base64.b64decode(data))
           print("Planilha decodificada com sucesso.")
