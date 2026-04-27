@@ -33,16 +33,18 @@ jobs:
           python - <<'EOF'
           import base64, os, re
           data = os.environ["PLANILHA_B64"]
+          if ',' in data:
+              data = data.split(',', 1)[1]
           data = re.sub(r'[^A-Za-z0-9+/=]', '', data)
           missing = len(data) % 4
           if missing:
               data += '=' * (4 - missing)
-          decoded = base64.b64decode(data)
-          print("Tamanho decodificado:", len(decoded), "bytes")
-          print("Primeiros bytes:", decoded[:4].hex())
+          decoded = base64.b64decode(data.encode('ascii'))
+          print("Tamanho:", len(decoded), "bytes")
+          print("Header:", decoded[:4].hex())
           with open("dados/dados_brutos_207.xlsx", "wb") as f:
               f.write(decoded)
-          print("Planilha salva.")
+          print("OK")
           EOF
         env:
           PLANILHA_B64: ${{ github.event.inputs.planilha_base64 }}
