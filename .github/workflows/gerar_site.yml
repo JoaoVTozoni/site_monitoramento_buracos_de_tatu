@@ -1,9 +1,8 @@
 name: Gerar Site Buracos de Tatu
 
 on:
-  push:
-    paths:
-      - 'dados/dados_brutos_207.xlsx'
+  repository_dispatch:
+    types: [atualiza-planilha]
 
 permissions:
   contents: write
@@ -24,10 +23,32 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
+      - name: Decodificar planilha
+        run: |
+          mkdir -p dados
+          python - <<'EOF'
+          import base64, os, re, json
+          payload = os.environ["PAYLOAD"]
+          data = json.loads(payload)["planilha_base64"]
+          if ',' in data:
+              data = data.split(',', 1)[1]
+          data = re.sub(r'[^A-Za-z0-9+/=]', '', data)
+          missing = len(data) % 4
+          if missing:
+              data += '=' * (4 - missing)
+          decoded = base64.b64decode(data.encode('ascii'))
+          print("Tamanho:", len(decoded), "bytes")
+          with open("dados/dados_brutos_207.xlsx", "wb") as f:
+              f.write(decoded)
+          print("OK")
+          EOF
+        env:
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+
       - name: Rodar script
         run: python gerar_site_buraco_de_tatu.py
 
-      - name: Commitar index.html gerado
+      - name: Commitar apenas index.html
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
