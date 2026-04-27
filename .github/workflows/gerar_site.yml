@@ -1,12 +1,9 @@
 name: Gerar Site Buracos de Tatu
 
 on:
-  workflow_dispatch:
-    inputs:
-      planilha_base64:
-        description: 'Conteudo base64 da planilha'
-        required: true
-        type: string
+  push:
+    paths:
+      - 'dados/dados_brutos_207.xlsx'
 
 permissions:
   contents: write
@@ -26,28 +23,6 @@ jobs:
 
       - name: Instalar dependencias
         run: pip install -r requirements.txt
-
-      - name: Decodificar planilha
-        run: |
-          mkdir -p dados
-          python - <<'EOF'
-          import base64, os, re
-          data = os.environ["PLANILHA_B64"]
-          if ',' in data:
-              data = data.split(',', 1)[1]
-          data = re.sub(r'[^A-Za-z0-9+/=]', '', data)
-          missing = len(data) % 4
-          if missing:
-              data += '=' * (4 - missing)
-          decoded = base64.b64decode(data.encode('ascii'))
-          print("Tamanho:", len(decoded), "bytes")
-          print("Header:", decoded[:4].hex())
-          with open("dados/dados_brutos_207.xlsx", "wb") as f:
-              f.write(decoded)
-          print("OK")
-          EOF
-        env:
-          PLANILHA_B64: ${{ github.event.inputs.planilha_base64 }}
 
       - name: Rodar script
         run: python gerar_site_buraco_de_tatu.py
