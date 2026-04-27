@@ -30,7 +30,16 @@ jobs:
       - name: Decodificar planilha
         run: |
           mkdir -p dados
-          echo "${{ github.event.inputs.planilha_base64 }}" | base64 -d > dados/dados_brutos_207.xlsx
+          python - <<'EOF'
+          import base64, os
+          data = os.environ["PLANILHA_B64"]
+          data = ''.join(data.split())
+          with open("dados/dados_brutos_207.xlsx", "wb") as f:
+              f.write(base64.b64decode(data))
+          print("Planilha decodificada com sucesso.")
+          EOF
+        env:
+          PLANILHA_B64: ${{ github.event.inputs.planilha_base64 }}
 
       - name: Rodar script
         run: python gerar_site_buraco_de_tatu.py
